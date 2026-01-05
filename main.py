@@ -48,7 +48,7 @@ from pydantic import BaseModel, Field
 from jose import JWTError, jwt
 
 # Hashing
-from passlib.context import CryptContext
+import bcrypt
 
 load_dotenv()
 
@@ -72,8 +72,6 @@ if not REFRESH_TOKEN_EXPIRE_DAYS:
     raise Exception("Favor verificar o REFRESH_TOKEN_EXPIRE_DAYS")
 
 DEFAULT_MODEL = "gpt-4o-mini"
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Conversações
 conversations: Dict[str, Dict[str, List[Dict]]] = {}
@@ -516,7 +514,7 @@ def list_conversations(user_id: str) -> List[Dict]:
 # =============================================================================
 FAKE_USER = {
     "username": "admin",
-    "hashed_password": pwd_context.hash("admin123"),
+    "hashed_password": bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
 }
 
 
@@ -580,7 +578,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário inválido."
         )
-    if not pwd_context.verify(login_data.password, FAKE_USER["hashed_password"]):
+    if not bcrypt.checkpw(login_data.password.encode('utf-8'), FAKE_USER["hashed_password"].encode('utf-8')):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Senha inválida."
